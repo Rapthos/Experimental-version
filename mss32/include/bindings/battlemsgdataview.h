@@ -55,7 +55,6 @@ public:
 
     UnitView getUnit() const;
     int getAttackCount() const;
-
 private:
     game::CMidgardID unitId;
     const game::IMidgardObjectMap* objectMap;
@@ -73,6 +72,7 @@ public:
     bool getUnitStatus(const IdView& unitId, int status) const;
 
     int getCurrentRound() const;
+
     bool getAutoBattle() const;
     bool getFastBattle() const;
 
@@ -136,6 +136,12 @@ public:
     int getUnitTransformRound(const UnitView& unit) const;
     int getUnitTransformRoundById(const IdView& unitId) const;
 
+    int getUnitAttackCount(const IdView& unitId) const;
+    bool isUnitTurn(const IdView& unitId) const;
+    bool setUnitAttackCount(const IdView& unitId, int value);
+    bool removeUnitModifier(const IdView& unitId, const std::string& id);
+    bool setHeal(const IdView& unitId, int value);
+
 protected:
     template <typename T>
     static void bindAccessMethods(T& view)
@@ -194,6 +200,12 @@ protected:
         view["getUnitTransformRound"] = sol::overload<>(
             &BattleMsgDataView::getUnitTransformRound,
             &BattleMsgDataView::getUnitTransformRoundById);
+
+        view["getUnitAttackCount"] = &BattleMsgDataView::getUnitAttackCount;
+        view["isUnitTurn"] = &BattleMsgDataView::isUnitTurn;
+        view["setUnitAttackCount"] = &BattleMsgDataView::setUnitAttackCount;
+        view["removeUnitModifier"] = &BattleMsgDataView::removeUnitModifier;
+        view["setHeal"] = &BattleMsgDataView::setHeal;
     }
 
 private:

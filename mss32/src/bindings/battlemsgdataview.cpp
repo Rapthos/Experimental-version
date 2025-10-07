@@ -27,6 +27,11 @@
 #include "idview.h"
 #include "playerview.h"
 #include "stackview.h"
+
+#include "modifierutils.h"
+#include "midgardobjectmap.h"
+#include "batattackutils.h"
+
 #include <sol/sol.hpp>
 
 namespace bindings {
@@ -415,6 +420,79 @@ std::optional<PlayerView> BattleMsgDataView::getPlayer(const game::CMidgardID& p
     }
 
     return PlayerView{player, objectMap};
+}
+//
+int BattleMsgDataView::getUnitAttackCount(const IdView& unitId) const
+{
+    int attackCount = 0;
+    for (auto& turns : battleMsgData->turnsOrder) {
+        if (turns.unitId == unitId.id) {
+            attackCount = turns.attackCount;
+            break;
+        }
+    }
+
+    return attackCount;
+}
+
+bool BattleMsgDataView::isUnitTurn(const IdView& unitId) const
+{
+    bool unitTurn = false;
+    auto& turns = battleMsgData->turnsOrder;
+    if (turns[0].unitId == unitId.id) {
+        unitTurn = true;
+    }
+
+    return unitTurn;
+}
+
+bool BattleMsgDataView::setUnitAttackCount(const IdView& unitId, int value)
+{
+    using namespace game;
+
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+
+    for (auto& turn : battle->turnsOrder) {
+        if (turn.unitId == unitId.id) {
+            turn.attackCount = value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool BattleMsgDataView::removeUnitModifier(const IdView& unitId, const std::string& id)
+{
+    using namespace game;
+
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+
+    const auto& modId = IdView{id};
+
+    auto* objectMap = hooks::getObjectMap();
+    auto* castObjectMap = const_cast<game::IMidgardObjectMap*>(objectMap);
+    auto targetUnit = static_cast<CMidUnit*>(castObjectMap->vftable->findScenarioObjectByIdForChange(castObjectMap, & unitId.id));
+
+    hooks::removeModifier(battle, targetUnit, &modId.id);
+
+    return true;
+}
+
+bool BattleMsgDataView::setHeal(const IdView& unitId, int value)
+{
+
+    using namespace game;
+    const auto& fn = gameFunctions();
+
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+
+    auto* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
+
+    int qtyHealed = hooks::heal(objectMap, battle, targetUnit, value);
+
+    return true;
 }
 
 } // namespace bindings

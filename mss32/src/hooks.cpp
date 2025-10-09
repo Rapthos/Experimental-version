@@ -253,6 +253,7 @@ static Hooks getGameHooks()
         {CBuildingBranchApi::get().constructor, buildingBranchCtorHooked},
         // Allow alchemists to buff retreating units
         {CBatAttackGiveAttackApi::vftable()->canPerform, giveAttackCanPerformHooked},
+        {CBatAttackGiveAttackApi::vftable()->onHit, giveAttackOnHitHooked},
         // Random scenario generator
         {CMenuNewSkirmishSingleApi::get().constructor, menuNewSkirmishSingleCtorHooked, (void**)&orig.menuNewSkirmishSingleCtor},
         {CMenuNewSkirmishHotseatApi::get().constructor, menuNewSkirmishHotseatCtorHooked, (void**)&orig.menuNewSkirmishHotseatCtor},
@@ -1402,6 +1403,53 @@ bool __fastcall giveAttackCanPerformHooked(game::CBatAttackGiveAttack* thisptr,
     const auto secondAttackClass = secondAttack->vftable->getAttackClass(secondAttack);
     // Do not allow to buff other units with this attack type as their second attack
     return secondAttackClass->id != attackCategories.giveAttack->id;
+}
+
+void __fastcall giveAttackOnHitHooked(game::CBatAttackShatter* thisptr,
+                                      int /*%edx*/,
+                                      game::IMidgardObjectMap* objectMap,
+                                      game::BattleMsgData* battleMsgData,
+                                      game::CMidgardID* unitId,
+                                      game::BattleAttackInfo** attackInfo)
+{
+    using namespace game;
+    auto& fn = gameFunctions();
+
+    const auto unit = gameFunctions().findUnitById(objectMap, unitId);
+
+    const auto soldier = gameFunctions().castUnitImplToSoldier(unit->unitImpl);
+    bool attackTwice = soldier && soldier->vftable->getAttackTwice(soldier);
+
+    auto& turns = battleMsgData->turnsOrder;
+    
+    int attackCount = 0;
+    
+    for (int i = 0; i < sizeof(turns) / sizeof(turns[0]); i++)
+    {
+        if (turns[i].unitId == *unitId) 
+        {
+            attackCount = turns[i].attackCount;
+            break;
+        }
+    }
+
+    turns[0].unitId = *unitId;
+
+    if (attackCount == 0) 
+    {
+        if (attackTwice)
+            turns[0].attackCount = 2;
+        else
+            turns[0].attackCount = 1;
+    } 
+    else
+        turns[0].attackCount = attackCount;
+
+    BattleAttackUnitInfo info{};
+    info.unitId = *unitId;
+    info.unitImplId = unit->unitImpl->id;
+
+    BattleAttackInfoApi::get().addUnitInfo(&(*attackInfo)->unitsInfo, &info);
 }
 
 bool __fastcall shatterCanPerformHooked(game::CBatAttackShatter* thisptr,

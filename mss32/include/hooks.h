@@ -137,6 +137,13 @@ bool __fastcall giveAttackCanPerformHooked(game::CBatAttackGiveAttack* thisptr,
                                            game::BattleMsgData* battleMsgData,
                                            game::CMidgardID* unitId);
 
+void __fastcall giveAttackOnHitHooked(game::CBatAttackShatter* thisptr,
+                                      int /*%edx*/,
+                                      game::IMidgardObjectMap* objectMap,
+                                      game::BattleMsgData* battleMsgData,
+                                      game::CMidgardID* unitId,
+                                      game::BattleAttackInfo** attackInfo);
+
 bool __fastcall shatterCanPerformHooked(game::CBatAttackShatter* thisptr,
                                         int /*%edx*/,
                                         game::IMidgardObjectMap* objectMap,

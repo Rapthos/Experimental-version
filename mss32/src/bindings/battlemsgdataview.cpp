@@ -31,8 +31,10 @@
 #include "modifierutils.h"
 #include "midgardobjectmap.h"
 #include "batattackutils.h"
+#include "visitors.h"
 
 #include <sol/sol.hpp>
+#include <restrictions.h>
 
 namespace bindings {
 

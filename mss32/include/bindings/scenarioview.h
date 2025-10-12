@@ -126,6 +126,13 @@ public:
     /** Searches for unit by id. */
     std::optional<UnitView> getUnitById(const IdView& id) const;
 
+    int addUnitXP(const std::string& id, int value);
+    bool setUnitHeal(const std::string& id, int value);
+    bool hasUnitModifier(const IdView& unitId, const std::string& id);
+    bool addUnitModifier(const IdView& unitId, const std::string& id);
+    bool hasUnitModifierByString(const std::string& unitId, const std::string& id);
+    bool removeUnitModifier(const IdView& unitId, const std::string& id);
+
     /** Searches for item by id string. */
     std::optional<ItemView> getItem(const std::string& id) const;
     /** Searches for item by id. */

@@ -56,6 +56,14 @@
 #include "unitview.h"
 #include <sol/sol.hpp>
 
+#include "game.h"
+#include "unitutils.h"
+#include "batattackutils.h"
+#include "visitors.h"
+#include "groupupgradehooks.h"
+#include <modifierutils.h>
+#include <midunithooks.h>
+
 namespace bindings {
 
 ScenarioView::ScenarioView(const game::IMidgardObjectMap* objectMap)
@@ -132,6 +140,12 @@ void ScenarioView::bind(sol::state& lua)
     scenario["forEachMercenary"] = &ScenarioView::forEachMercenary;
     scenario["forEachTrainer"] = &ScenarioView::forEachTrainer;
     scenario["forEachMarket"] = &ScenarioView::forEachMarket;
+    scenario["addUnitXP"] = sol::overload<>(&ScenarioView::addUnitXP);
+    scenario["setUnitHeal"] = sol::overload<>(&ScenarioView::setUnitHeal);
+    scenario["hasUnitModifier"] = sol::overload<>(&ScenarioView::hasUnitModifierByString,
+                                                  &ScenarioView::hasUnitModifier);
+    scenario["addUnitModifier"] = sol::overload<>(&ScenarioView::addUnitModifier);
+    scenario["removeUnitModifier"] = sol::overload<>(&ScenarioView::removeUnitModifier);
 }
 
 std::optional<LocationView> ScenarioView::getLocation(const std::string& id) const
@@ -1085,4 +1099,97 @@ const game::CMidgardID* ScenarioView::getObjectId(int x, int y, game::IdType typ
     return CMidgardPlanApi::get().getObjectId(plan, &position, &type);
 }
 
+int ScenarioView::addUnitXP(const std::string& id, int value)
+{
+    using namespace game;
+
+    const auto &fn = gameFunctions();
+    
+    auto objMap = const_cast<game::IMidgardObjectMap*>(objectMap);
+    auto unitId = IdView{id};
+    auto unit = fn.findUnitById(objectMap, &unitId.id);
+
+    if (unit == nullptr)
+        return 0;
+
+    int xpGain = hooks::addUnitXpNoUpgrade( objMap, unit, value);
+
+    return xpGain;
+}
+
+bool ScenarioView::setUnitHeal(const std::string& id, int value)
+{
+    using namespace game;
+
+    const auto &fn = gameFunctions();
+    const auto &visitors = VisitorApi::get();
+
+    auto objMap = const_cast<game::IMidgardObjectMap*>(objectMap);
+    auto unitId = IdView{id};
+    auto unit = fn.findUnitById(objectMap, &unitId.id);
+
+    if (unit == nullptr)
+        return false;
+
+    visitors.changeUnitHp(&unit->id, value, objMap, 1);
+
+    return true;
+}
+
+bool ScenarioView::hasUnitModifier(const IdView &unitId, const std::string &id)
+{
+    using namespace game;
+    auto &fn = gameFunctions();
+
+    auto unit = fn.findUnitById(objectMap, &unitId.id);
+
+    if (unit == nullptr)
+        return false;
+
+    auto modId = IdView{id};
+
+    return hooks::hasModifier( unit->unitImpl, &modId.id );
+}
+
+bool ScenarioView::hasUnitModifierByString(const std::string& unitId, const std::string& id)
+{
+    return hasUnitModifier(IdView{unitId}, id);
+}
+
+bool ScenarioView::addUnitModifier(const IdView& unitId, const std::string& id)
+{
+    using namespace game;
+    auto& fn = gameFunctions();
+
+    auto unit = fn.findUnitById(objectMap, &unitId.id);
+
+    if (unit == nullptr)
+        return false;
+
+    auto modId = IdView{id};
+
+    hooks::addModifier(unit, &modId.id, true);
+
+    return true;
+}
+
+bool ScenarioView::removeUnitModifier(const IdView& unitId, const std::string& id)
+{
+    using namespace game;
+    auto& fn = gameFunctions();
+    auto& MidUnitApi = CMidUnitApi::get();
+
+    auto unit = fn.findUnitById(objectMap, &unitId.id);
+
+    if (unit == nullptr)
+        return false;
+
+    auto modId = IdView{id};
+
+    //hooks::removeModifierHooked(unit, 1, &modId.id);
+
+    MidUnitApi.removeModifier(unit, &modId.id);
+
+    return true;
+}
 } // namespace bindings

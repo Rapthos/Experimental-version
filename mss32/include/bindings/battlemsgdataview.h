@@ -137,10 +137,15 @@ public:
     int getUnitTransformRoundById(const IdView& unitId) const;
 
     int getUnitAttackCount(const IdView& unitId) const;
-    bool isUnitTurn(const IdView& unitId) const;
+    UnitView getUnitTurn() const;
     bool setUnitAttackCount(const IdView& unitId, int value);
-    bool removeUnitModifier(const IdView& unitId, const std::string& id);
+    bool addUnitModifier(const IdView& unitId, const IdView& unitId2, const std::string& modifierId);
     bool setHeal(const IdView& unitId, int value);
+    bool setShatteredArmor(const IdView& unitId, int value);
+    bool setPoison(const IdView& unitId, int value, bool isLong);
+    bool setFrostbite(const IdView& unitId, int value, bool isLong);
+    bool setBlister(const IdView& unitId, int value, bool isLong);
+    bool setParalyze(const IdView& unitId, bool isLong);
 
 protected:
     template <typename T>
@@ -201,11 +206,16 @@ protected:
             &BattleMsgDataView::getUnitTransformRound,
             &BattleMsgDataView::getUnitTransformRoundById);
 
-        view["getUnitAttackCount"] = &BattleMsgDataView::getUnitAttackCount;
-        view["isUnitTurn"] = &BattleMsgDataView::isUnitTurn;
-        view["setUnitAttackCount"] = &BattleMsgDataView::setUnitAttackCount;
-        view["removeUnitModifier"] = &BattleMsgDataView::removeUnitModifier;
-        view["setHeal"] = &BattleMsgDataView::setHeal;
+        view["GetUnitAttackCount"] = &BattleMsgDataView::getUnitAttackCount;
+        view["GetUnitTurn"] = &BattleMsgDataView::getUnitTurn;
+        view["SetUnitAttackCount"] = &BattleMsgDataView::setUnitAttackCount;
+        view["AddUnitModifier"] = &BattleMsgDataView::addUnitModifier;
+        view["SetHeal"] = &BattleMsgDataView::setHeal;
+        view["SetShatteredArmor"] = &BattleMsgDataView::setShatteredArmor;
+        view["SetPoison"] = &BattleMsgDataView::setPoison;
+        view["SetFrostbite"] = &BattleMsgDataView::setFrostbite;
+        view["SetBlister"] = &BattleMsgDataView::setBlister;
+        view["SetParalyze"] = &BattleMsgDataView::setParalyze;
     }
 
 private:

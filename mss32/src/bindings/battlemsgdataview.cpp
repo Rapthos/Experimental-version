@@ -32,9 +32,11 @@
 #include "midgardobjectmap.h"
 #include "batattackutils.h"
 #include "visitors.h"
+#include "settings.h"
 
 #include <sol/sol.hpp>
 #include <restrictions.h>
+#include <ussoldier.h>
 
 namespace bindings {
 
@@ -423,7 +425,7 @@ std::optional<PlayerView> BattleMsgDataView::getPlayer(const game::CMidgardID& p
 
     return PlayerView{player, objectMap};
 }
-//
+
 int BattleMsgDataView::getUnitAttackCount(const IdView& unitId) const
 {
     int attackCount = 0;
@@ -437,15 +439,11 @@ int BattleMsgDataView::getUnitAttackCount(const IdView& unitId) const
     return attackCount;
 }
 
-bool BattleMsgDataView::isUnitTurn(const IdView& unitId) const
+UnitView BattleMsgDataView::getUnitTurn() const
 {
-    bool unitTurn = false;
     auto& turns = battleMsgData->turnsOrder;
-    if (turns[0].unitId == unitId.id) {
-        unitTurn = true;
-    }
-
-    return unitTurn;
+    auto unitId = turns[0].unitId;
+    return UnitView{game::gameFunctions().findUnitById(objectMap, &unitId)};
 }
 
 bool BattleMsgDataView::setUnitAttackCount(const IdView& unitId, int value)
@@ -464,19 +462,20 @@ bool BattleMsgDataView::setUnitAttackCount(const IdView& unitId, int value)
     return false;
 }
 
-bool BattleMsgDataView::removeUnitModifier(const IdView& unitId, const std::string& id)
+bool BattleMsgDataView::addUnitModifier(const IdView& unitId, const IdView& unitId2, const std::string& modifierId)
 {
     using namespace game;
+    const auto& fn = gameFunctions();
 
     auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
 
-    const auto& modId = IdView{id};
+    auto* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId2.id);
 
-    auto* objectMap = hooks::getObjectMap();
-    auto* castObjectMap = const_cast<game::IMidgardObjectMap*>(objectMap);
-    auto targetUnit = static_cast<CMidUnit*>(castObjectMap->vftable->findScenarioObjectByIdForChange(castObjectMap, & unitId.id));
+    const auto& modId = IdView{modifierId};
 
-    hooks::removeModifier(battle, targetUnit, &modId.id);
+    if (hooks::canApplyModifier(battle, targetUnit, &modId.id))
+        hooks::applyModifier(&unitId.id, battle, targetUnit, &modId.id);
 
     return true;
 }
@@ -494,7 +493,108 @@ bool BattleMsgDataView::setHeal(const IdView& unitId, int value)
 
     int qtyHealed = hooks::heal(objectMap, battle, targetUnit, value);
 
+    if (targetUnit->currentHp == 0) 
+        targetUnit->currentHp = 1;
+    //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Dead, true);
+    //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::XpCounted, true);
+
     return true;
 }
 
+bool BattleMsgDataView::setShatteredArmor(const IdView& unitId, int value)
+{
+    using namespace game;
+
+    auto info = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, &unitId.id);
+    if (!info) {
+        return false;
+    }
+
+    int maxShatter = hooks::userSettings().shatteredArmorMax;
+
+    info->shatteredArmor = std::clamp(info->shatteredArmor + value, 0, maxShatter);
+
+    return true;
+}
+
+bool BattleMsgDataView::setPoison(const IdView& unitId, int value, bool isLong)
+{
+    using namespace game;
+
+    auto info = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, &unitId.id);
+    if (!info) {
+        return false;
+    }
+
+    std::string dmg = std::to_string(std::clamp(value, 1, 300)); 
+    dmg.insert(0, 4 - dmg.length(), '0');
+
+    auto test = IdView{"g200aa"+dmg};
+    info->poisonAttackId = test.id;
+    info->poisonAppliedRound = battleMsgData->currentRound;
+
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Poison, true);
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::PoisonLong, isLong);
+
+    return true;
+}
+bool BattleMsgDataView::setFrostbite(const IdView& unitId, int value, bool isLong)
+{
+    using namespace game;
+
+    auto info = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, &unitId.id);
+    if (!info) {
+        return false;
+    }
+
+    std::string dmg = std::to_string(std::clamp(value, 1, 300));
+    dmg.insert(0, 4 - dmg.length(), '0');
+
+    auto test = IdView{"g201aa" + dmg};
+    info->frostbiteAttackId = test.id;
+    info->frostbiteAppliedRound = battleMsgData->currentRound;
+
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Frostbite, true);
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::FrostbiteLong, isLong);
+
+    return true;
+}
+bool BattleMsgDataView::setBlister(const IdView& unitId, int value, bool isLong)
+{
+    using namespace game;
+
+    auto info = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, &unitId.id);
+    if (!info) {
+        return false;
+    }
+
+    std::string dmg = std::to_string(std::clamp(value, 1, 300));
+    dmg.insert(0, 4 - dmg.length(), '0');
+
+    auto test = IdView{"g202aa" + dmg};
+    info->blisterAttackId = test.id;
+    info->blisterAppliedRound = battleMsgData->currentRound;
+
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Blister, true);
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::BlisterLong, isLong);
+
+    return true;
+}
+//Doesnt work with Before-AfterTurns and DisableLong
+bool BattleMsgDataView::setParalyze(const IdView& unitId, bool isLong)
+{
+    using namespace game;
+
+    auto info = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, &unitId.id);
+    if (!info) {
+        return false;
+    }
+
+    //auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+    //BattleMsgDataApi::get().setDisableAppliedRound(battle, &unitId.id, battleMsgData->currentRound);
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Paralyze, true);
+    //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::DisableLong, true);
+
+    return true;
+}
 } // namespace bindings

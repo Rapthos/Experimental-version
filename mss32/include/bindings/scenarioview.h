@@ -126,12 +126,12 @@ public:
     /** Searches for unit by id. */
     std::optional<UnitView> getUnitById(const IdView& id) const;
 
-    int addUnitXP(const std::string& id, int value);
-    bool setUnitHeal(const std::string& id, int value);
-    bool hasUnitModifier(const IdView& unitId, const std::string& id);
-    bool addUnitModifier(const IdView& unitId, const std::string& id);
-    bool hasUnitModifierByString(const std::string& unitId, const std::string& id);
-    bool removeUnitModifier(const IdView& unitId, const std::string& id);
+    int addUnitXP(const IdView& unitId, int value);
+    bool setHeal(const IdView& unitId, int value);
+    bool hasUnitModifier(const IdView& unitId, const std::string& modifierId);
+    bool hasUnitModifierByString(const std::string& unitId, const std::string& modifierId);
+    bool addUnitModifier(const IdView& unitId, const std::string& modifierId);
+    bool removeUnitModifier(const IdView& unitId, const std::string& modifierId);
 
     /** Searches for item by id string. */
     std::optional<ItemView> getItem(const std::string& id) const;

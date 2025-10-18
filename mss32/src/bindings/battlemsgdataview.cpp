@@ -37,6 +37,8 @@
 #include <sol/sol.hpp>
 #include <restrictions.h>
 #include <ussoldier.h>
+#include "deathanimcat.h"
+#include "mqanimation.h"
 
 namespace bindings {
 
@@ -494,9 +496,14 @@ bool BattleMsgDataView::setHeal(const IdView& unitId, int value)
     int qtyHealed = hooks::heal(objectMap, battle, targetUnit, value);
 
     if (targetUnit->currentHp == 0) 
-        targetUnit->currentHp = 1;
-    //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Dead, true);
-    //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::XpCounted, true);
+    {
+        const auto& visitors = VisitorApi::get();
+        //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Dead, true);
+        //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::XpCounted, true);
+        //First globalmap, then battle
+        visitors.changeUnitHp(&targetUnit->id, 1, objectMap, 1);
+        BattleMsgDataApi::get().setUnitHp(battle, &targetUnit->id, 1);
+    }
 
     return true;
 }
@@ -593,6 +600,7 @@ bool BattleMsgDataView::setParalyze(const IdView& unitId, bool isLong)
     //auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
     //BattleMsgDataApi::get().setDisableAppliedRound(battle, &unitId.id, battleMsgData->currentRound);
     BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Paralyze, true);
+
     //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::DisableLong, true);
 
     return true;

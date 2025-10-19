@@ -738,15 +738,6 @@ bool addModifier(game::CMidUnit* unit, const game::CMidgardID* modifierId, bool 
     if (checkCanApply && !unitModifier->vftable->canApplyToUnit(unitModifier, unit->unitImpl)) {
         return false;
     }
-    //
-    // Replace blockModifier -> OnAddModifier
-    //
-    //auto unitId = &unit->id;
-    //auto unitIdString = hooks::idToString(unitId);
-    //const char* unitstr = unitIdString.c_str();
-
-    //auto modString = hooks::idToString(modifierId);
-    //const char* cstr = modString.c_str();
 
     bool OnAddModifier = true;
     std::optional<sol::environment> env;

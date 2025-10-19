@@ -39,6 +39,8 @@
 #include "usunitimpl.h"
 #include <spdlog/spdlog.h>
 
+#include "modifierview.h"
+
 namespace hooks {
 
 bool __fastcall addModifierHooked(game::CMidUnit* thisptr,
@@ -59,6 +61,26 @@ bool __fastcall removeModifierHooked(game::CMidUnit* thisptr,
     if (!thisptr) {
         return false;
     }
+
+    bool OnRemoveModifier = true;
+    std::optional<sol::environment> env;
+    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnRemoveModifier", env, false, true);
+    if (f) {
+        try {
+            const bindings::UnitView target{thisptr};
+            const auto unitModifier = getUnitModifier(modifierId);
+            const bindings::ModifierView mods{unitModifier->vftable->createModifier(unitModifier)};
+
+            OnRemoveModifier = (*f)(target, mods);
+        } catch (const std::exception& e) {
+            showErrorMessageBox(fmt::format("Failed to run 'OnRemoveModifier' script.\n"
+                                            "Reason: '{:s}'",
+                                            e.what()));
+            OnRemoveModifier = true;
+        }
+    }
+    if (!OnRemoveModifier)
+        return false;
 
     CUmModifier* modifier = nullptr;
     for (auto curr = thisptr->unitImpl; curr; curr = modifier->data->prev) {

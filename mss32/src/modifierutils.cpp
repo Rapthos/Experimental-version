@@ -35,6 +35,9 @@
 #include "umunit.h"
 #include "unitmodifier.h"
 #include "ussoldier.h"
+#include "modifierview.h"
+#include "unitview.h"
+#include <spdlog/spdlog.h>
 
 namespace hooks {
 
@@ -735,6 +738,36 @@ bool addModifier(game::CMidUnit* unit, const game::CMidgardID* modifierId, bool 
     if (checkCanApply && !unitModifier->vftable->canApplyToUnit(unitModifier, unit->unitImpl)) {
         return false;
     }
+    //
+    // Replace blockModifier -> OnAddModifier
+    //
+    //auto unitId = &unit->id;
+    //auto unitIdString = hooks::idToString(unitId);
+    //const char* unitstr = unitIdString.c_str();
+
+    //auto modString = hooks::idToString(modifierId);
+    //const char* cstr = modString.c_str();
+
+    bool OnAddModifier = true;
+    std::optional<sol::environment> env;
+    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnAddModifier", env, false, true);
+
+    if (f) {
+        try {
+            const bindings::UnitView target{unit};
+            const bindings::ModifierView mods{unitModifier->vftable->createModifier(unitModifier)};
+
+            OnAddModifier = (*f)(target, mods);
+        } catch (const std::exception& e) {
+            showErrorMessageBox(fmt::format("Failed to run 'OnAddModifier' script.\n"
+                                            "Reason: '{:s}'",
+                                            e.what()));
+            OnAddModifier = true;
+        }
+    }
+
+    if (!OnAddModifier)
+        return false;
 
     auto modifier = unitModifier->vftable->createModifier(unitModifier);
 

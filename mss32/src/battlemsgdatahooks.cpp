@@ -28,7 +28,7 @@
 #include "customattacks.h"
 #include "fortification.h"
 #include "gameutils.h"
-#include "groupview.h"
+//#include "groupview.h"
 #include "intset.h"
 #include "midplayer.h"
 #include "midstack.h"
@@ -402,6 +402,22 @@ void __fastcall beforeBattleRoundHooked(game::BattleMsgData* thisptr, int /*%edx
     freeTransformSelf.unitId = emptyId;
     freeTransformSelf.turnCount = 0;
     freeTransformSelf.used = false;
+
+    //Hooks
+    std::optional<sol::environment> env;
+    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnBeforeBattleRound", env, false,
+                               true);
+    if (f) {
+        try {
+            const bindings::BattleMsgDataView battleMsg{thisptr, getObjectMap()};
+
+            (*f)(battleMsg);
+        } catch (const std::exception& e) {
+            showErrorMessageBox(fmt::format("Failed to run 'OnBeforeBattleRound' script.\n"
+                                            "Reason: '{:s}'",
+                                            e.what()));
+        }
+    }
 }
 
 void __stdcall aiChooseBattleActionHooked(const game::IMidgardObjectMap* objectMap,

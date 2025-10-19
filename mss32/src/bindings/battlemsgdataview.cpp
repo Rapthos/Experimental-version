@@ -536,8 +536,8 @@ bool BattleMsgDataView::setPoison(const IdView& unitId, int value, bool isLong)
     std::string dmg = std::to_string(std::clamp(value, 1, 300)); 
     dmg.insert(0, 4 - dmg.length(), '0');
 
-    auto test = IdView{"g200aa"+dmg};
-    info->poisonAttackId = test.id;
+    auto attack = IdView{"g200aa"+dmg};
+    info->poisonAttackId = attack.id;
     info->poisonAppliedRound = battleMsgData->currentRound;
 
     BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Poison, true);
@@ -557,8 +557,8 @@ bool BattleMsgDataView::setFrostbite(const IdView& unitId, int value, bool isLon
     std::string dmg = std::to_string(std::clamp(value, 1, 300));
     dmg.insert(0, 4 - dmg.length(), '0');
 
-    auto test = IdView{"g201aa" + dmg};
-    info->frostbiteAttackId = test.id;
+    auto attack = IdView{"g201aa" + dmg};
+    info->frostbiteAttackId = attack.id;
     info->frostbiteAppliedRound = battleMsgData->currentRound;
 
     BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Frostbite, true);
@@ -578,8 +578,8 @@ bool BattleMsgDataView::setBlister(const IdView& unitId, int value, bool isLong)
     std::string dmg = std::to_string(std::clamp(value, 1, 300));
     dmg.insert(0, 4 - dmg.length(), '0');
 
-    auto test = IdView{"g202aa" + dmg};
-    info->blisterAttackId = test.id;
+    auto attack = IdView{"g202aa" + dmg};
+    info->blisterAttackId = attack.id;
     info->blisterAppliedRound = battleMsgData->currentRound;
 
     BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Blister, true);

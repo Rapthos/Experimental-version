@@ -588,7 +588,7 @@ bool BattleMsgDataView::setBlister(const IdView& unitId, int value, bool isLong)
     return true;
 }
 //Doesnt work with Before-AfterTurns and DisableLong
-bool BattleMsgDataView::setParalyze(const IdView& unitId, bool isLong)
+bool BattleMsgDataView::setParalyze(const IdView& unitId)
 {
     using namespace game;
 
@@ -597,11 +597,7 @@ bool BattleMsgDataView::setParalyze(const IdView& unitId, bool isLong)
         return false;
     }
 
-    //auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
-    //BattleMsgDataApi::get().setDisableAppliedRound(battle, &unitId.id, battleMsgData->currentRound);
     BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Paralyze, true);
-
-    //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::DisableLong, true);
 
     return true;
 }

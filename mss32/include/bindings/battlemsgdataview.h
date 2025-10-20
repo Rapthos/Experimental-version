@@ -145,7 +145,7 @@ public:
     bool setPoison(const IdView& unitId, int value, bool isLong);
     bool setFrostbite(const IdView& unitId, int value, bool isLong);
     bool setBlister(const IdView& unitId, int value, bool isLong);
-    bool setParalyze(const IdView& unitId, bool isLong);
+    bool setParalyze(const IdView& unitId);
 
 protected:
     template <typename T>

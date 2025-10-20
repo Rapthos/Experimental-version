@@ -1825,10 +1825,11 @@ void __stdcall afterBattleTurnHooked(game::BattleMsgData* battleMsgData,
     using namespace game;
 
     const auto& fn = gameFunctions();
+    const auto& battle = BattleMsgDataApi::get();
 
     if (*unitId != *nextUnitId) {
         battleMsgData->battleStateFlags2.parts.shouldUpdateUnitEffects = true;
-        BattleMsgDataApi::get().removeFiniteBoostLowerDamage(battleMsgData, unitId);
+        battle.removeFiniteBoostLowerDamage(battleMsgData, unitId);
     }
 
     std::optional<sol::environment> env;
@@ -1848,6 +1849,14 @@ void __stdcall afterBattleTurnHooked(game::BattleMsgData* battleMsgData,
                                             "Reason: '{:s}'",
                                             e.what()));
         }
+    }
+
+    //Disable Wait/Defend/Retreat for SetUnitAttackCount
+    if (*nextUnitId == *unitId) 
+    {
+        auto unitInfo = battle.getUnitInfoById(battleMsgData, nextUnitId);
+        if (unitInfo)
+            unitInfo->unitFlags.parts.attackedOnceOfTwice = true;
     }
 
     currUnitId = *unitId;
@@ -1907,23 +1916,6 @@ void __stdcall beforeBattleTurnHooked(game::BattleMsgData* battleMsgData,
             unitInfo->unitFlags.parts.attackedOnceOfTwice = true;
     }
     freeTransformSelf.turnCount++;
-    /*
-    std::optional<sol::environment> env;
-    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnBeforeBattleTurn", env, false, true);
-    if (f) {
-        try {
-            CMidUnit* cMidUnit = fn.findUnitById(objectMap, unitId);
-            const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
-            const bindings::UnitView unit{cMidUnit};
-
-            (*f)(battleMsg, unit);
-        } catch (const std::exception& e) {
-            showErrorMessageBox(fmt::format("Failed to run 'OnBeforeBattleTurn' script.\n"
-                                            "Reason: '{:s}'",
-                                            e.what()));
-        }
-    }
-    */
 }
 
 void __stdcall throwExceptionHooked(const game::os_exception* thisptr, const void* throwInfo)

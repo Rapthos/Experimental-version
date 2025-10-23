@@ -146,6 +146,7 @@ public:
     bool setFrostbite(const IdView& unitId, int value, bool isLong);
     bool setBlister(const IdView& unitId, int value, bool isLong);
     bool setParalyze(const IdView& unitId);
+    bool setCure(const IdView& unitId);
 
 protected:
     template <typename T>
@@ -216,6 +217,7 @@ protected:
         view["SetFrostbite"] = &BattleMsgDataView::setFrostbite;
         view["SetBlister"] = &BattleMsgDataView::setBlister;
         view["SetParalyze"] = &BattleMsgDataView::setParalyze;
+        view["SetCure"] = &BattleMsgDataView::setCure;
     }
 
 private:

@@ -1832,6 +1832,16 @@ void __stdcall afterBattleTurnHooked(game::BattleMsgData* battleMsgData,
         battle.removeFiniteBoostLowerDamage(battleMsgData, unitId);
     }
 
+    //Disable Wait/Defend/Retreat for SetUnitAttackCount
+    auto unitInfo = battle.getUnitInfoById(battleMsgData, nextUnitId);
+    if (*nextUnitId == *unitId && !battle.getUnitStatus(battleMsgData, unitId, BattleStatus::Defend)) 
+    {
+        if (unitInfo)
+            unitInfo->unitFlags.parts.attackedOnceOfTwice = true;
+    }
+
+    currUnitId = *unitId;
+
     std::optional<sol::environment> env;
     auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnAfterBattleTurn", env, false,
                                true);
@@ -1850,16 +1860,6 @@ void __stdcall afterBattleTurnHooked(game::BattleMsgData* battleMsgData,
                                             e.what()));
         }
     }
-
-    //Disable Wait/Defend/Retreat for SetUnitAttackCount
-    if (*nextUnitId == *unitId) 
-    {
-        auto unitInfo = battle.getUnitInfoById(battleMsgData, nextUnitId);
-        if (unitInfo)
-            unitInfo->unitFlags.parts.attackedOnceOfTwice = true;
-    }
-
-    currUnitId = *unitId;
 }
 
 void __stdcall beforeBattleTurnHooked(game::BattleMsgData* battleMsgData,
@@ -1869,25 +1869,8 @@ void __stdcall beforeBattleTurnHooked(game::BattleMsgData* battleMsgData,
     using namespace game;
 
     const auto& fn = gameFunctions();
-
-    std::optional<sol::environment> env;
-    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnBeforeBattleTurn", env, false,
-                               true);
-    if (f) {
-        try {
-            CMidUnit* cMidUnit = fn.findUnitById(objectMap, unitId);
-            const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
-            const bindings::UnitView unit{cMidUnit};
-
-            (*f)(battleMsg, unit);
-        } catch (const std::exception& e) {
-            showErrorMessageBox(fmt::format("Failed to run 'OnBeforeBattleTurn' script.\n"
-                                            "Reason: '{:s}'",
-                                            e.what()));
-        }
-    }
-
     const auto& battle = BattleMsgDataApi::get();
+
     battle.setUnitStatus(battleMsgData, unitId, BattleStatus::Defend, false);
 
     // Fix bestow wards with double attack where modifiers granted by first attack are removed
@@ -1916,6 +1899,23 @@ void __stdcall beforeBattleTurnHooked(game::BattleMsgData* battleMsgData,
             unitInfo->unitFlags.parts.attackedOnceOfTwice = true;
     }
     freeTransformSelf.turnCount++;
+
+    std::optional<sol::environment> env;
+    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnBeforeBattleTurn", env, false,
+                               true);
+    if (f) {
+        try {
+            CMidUnit* cMidUnit = fn.findUnitById(objectMap, unitId);
+            const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
+            const bindings::UnitView unit{cMidUnit};
+    
+            (*f)(battleMsg, unit);
+        } catch (const std::exception& e) {
+            showErrorMessageBox(fmt::format("Failed to run 'OnBeforeBattleTurn' script.\n"
+                                            "Reason: '{:s}'",
+                                            e.what()));
+        }
+    }
 }
 
 void __stdcall throwExceptionHooked(const game::os_exception* thisptr, const void* throwInfo)

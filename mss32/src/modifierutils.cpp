@@ -457,10 +457,14 @@ bool applyModifier(const game::CMidgardID* unitId,
 {
     using namespace game;
 
+    //Fixed situation, when OnAddModifier return false, but battle modifier can be applied on unit
+    bool applyed = CMidUnitApi::get().addModifier(targetUnit, modifierId);
+    if (!applyed) {
+        return false;
+    }
+
     if (!addModifiedUnitInfo(unitId, battleMsgData, targetUnit, modifierId))
         return false;
-
-    CMidUnitApi::get().addModifier(targetUnit, modifierId);
 
     // Fixes modifiers getting lost after modified unit is untransformed
     if (targetUnit->transformed)

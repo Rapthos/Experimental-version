@@ -456,6 +456,11 @@ bool BattleMsgDataView::setUnitAttackCount(const IdView& unitId, int value)
 
     for (auto& turn : battle->turnsOrder) {
         if (turn.unitId == unitId.id) {
+            if (value < 1) {
+                while (BattleMsgDataApi::get().decreaseUnitAttacks(battle, &unitId.id))
+                    ;
+                return true;
+            }
             turn.attackCount = value;
             return true;
         }
@@ -592,13 +597,18 @@ bool BattleMsgDataView::setParalyze(const IdView& unitId)
 {
     using namespace game;
 
-    auto info = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, &unitId.id);
-    if (!info) {
-        return false;
-    }
-
     BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Paralyze, true);
 
     return true;
 }
+
+bool BattleMsgDataView::setCure(const IdView& unitId)
+{
+    using namespace game;
+
+    BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Cured, true);
+
+    return true;
+}
+
 } // namespace bindings

@@ -488,6 +488,8 @@ static Hooks getGameHooks()
         {CBatLogicApi::get().updateGroupsIfBattleIsOver, updateGroupsIfBattleIsOverHooked},
         // Fixed an issue where a unit killed by a DoT effect was considered alive until end next action
         {CBatLogicApi::get().battleTurn, battleTurnHooked, (void**)&orig.battleTurn},
+        //Fixed an issue where a unit with "attackCount" 3 or more incorrectly reduce its attack count.
+        {battle.setUnitStatus, setUnitStatusHooked, (void**)&orig.setUnitStatus},
     };
     // clang-format on
 
@@ -2874,6 +2876,25 @@ bool __stdcall siteHasSoundHooked(const game::CMidSite* site)
     }
 
     return false;
+}
+
+
+void __fastcall setUnitStatusHooked(const game::BattleMsgData* battleMsgData,
+                           int /*%edx*/,
+                           const game::CMidgardID* unitId,
+                           const int status,
+                           bool enable)
+{
+    using namespace game;
+
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+
+    if (BattleStatus(status) == BattleStatus::Defend && enable) 
+    {
+        while (BattleMsgDataApi::get().decreaseUnitAttacks(battle, unitId));
+    }
+
+    getOriginalFunctions().setUnitStatus(battleMsgData, unitId, BattleStatus(status), enable);
 }
 
 } // namespace hooks

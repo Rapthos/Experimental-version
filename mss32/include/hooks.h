@@ -328,6 +328,11 @@ game::String* __stdcall getSiteSoundHooked(game::String* soundName, const game::
 
 bool __stdcall siteHasSoundHooked(const game::CMidSite* site);
 
+void __fastcall setUnitStatusHooked(const game::BattleMsgData* thisptr,
+                           int /*%edx*/,
+                           const game::CMidgardID* unitId,
+                           const int status,
+                           bool enable);
 } // namespace hooks
 
 #endif // HOOKS_H

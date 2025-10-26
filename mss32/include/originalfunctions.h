@@ -220,6 +220,8 @@ struct OriginalFunctions
     game::CMidObjectLockApi::Api::Constructor midObjectLockCtor;
 
     game::CBatLogicApi::Api::BattleTurn battleTurn;
+
+    game::BattleMsgDataApi::Api::SetUnitStatus setUnitStatus;
 };
 
 OriginalFunctions& getOriginalFunctions();

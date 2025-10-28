@@ -487,30 +487,57 @@ bool BattleMsgDataView::addUnitModifier(const IdView& unitId, const IdView& unit
     return true;
 }
 
-bool BattleMsgDataView::setHeal(const IdView& unitId, int value)
+int BattleMsgDataView::heal(const IdView& unitId, int value)
 {
 
     using namespace game;
     const auto& fn = gameFunctions();
+
+    if (BattleMsgDataApi::get().getUnitStatus(battleMsgData, &unitId.id, BattleStatus::Dead))
+        return 0;
+
+    int heal = std::clamp(value, -9999, 9999);
 
     auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
 
     auto* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
     CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
 
-    int qtyHealed = hooks::heal(objectMap, battle, targetUnit, value);
+    int qtyHealed = hooks::heal(objectMap, battle, targetUnit, heal);
 
     if (targetUnit->currentHp == 0) 
     {
-        const auto& visitors = VisitorApi::get();
         //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Dead, true);
         //BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::XpCounted, true);
         //First globalmap, then battle
-        visitors.changeUnitHp(&targetUnit->id, 1, objectMap, 1);
+        targetUnit->currentHp = 1;
         BattleMsgDataApi::get().setUnitHp(battle, &targetUnit->id, 1);
+        qtyHealed++;
     }
 
-    return true;
+    return qtyHealed;
+}
+
+int BattleMsgDataView::setHealth(const IdView& unitId, int value)
+{
+    using namespace game;
+    const auto& fn = gameFunctions();
+
+    if (BattleMsgDataApi::get().getUnitStatus(battleMsgData, &unitId.id, BattleStatus::Dead))
+        return 0;
+
+    auto* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+
+    int health = std::clamp(value, 1, 9999);
+
+    const auto& visitors = VisitorApi::get();
+    visitors.changeUnitHp(&unitId.id, health-targetUnit->currentHp, objectMap, 1);
+
+    BattleMsgDataApi::get().setUnitHp(battle, &unitId.id, health);
+
+    return targetUnit->currentHp;
 }
 
 bool BattleMsgDataView::setShatteredArmor(const IdView& unitId, int value)
@@ -602,7 +629,7 @@ bool BattleMsgDataView::setParalyze(const IdView& unitId)
     return true;
 }
 
-bool BattleMsgDataView::setCure(const IdView& unitId)
+bool BattleMsgDataView::cure(const IdView& unitId)
 {
     using namespace game;
 

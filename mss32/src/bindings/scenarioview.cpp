@@ -143,7 +143,7 @@ void ScenarioView::bind(sol::state& lua)
     scenario["forEachTrainer"] = &ScenarioView::forEachTrainer;
     scenario["forEachMarket"] = &ScenarioView::forEachMarket;
     scenario["AddUnitXP"] = sol::overload<>(&ScenarioView::addUnitXP);
-    scenario["SetHeal"] = sol::overload<>(&ScenarioView::setHeal);
+    scenario["Heal"] = sol::overload<>(&ScenarioView::heal);
     scenario["HasUnitModifier"] = sol::overload<>(&ScenarioView::hasUnitModifierByString,
                                                   &ScenarioView::hasUnitModifier);
     scenario["AddUnitModifier"] = sol::overload<>(&ScenarioView::addUnitModifier);
@@ -1118,7 +1118,7 @@ int ScenarioView::addUnitXP(const IdView& unitId, int value)
     return xpGain;
 }
 
-bool ScenarioView::setHeal(const IdView& unitId, int value)
+bool ScenarioView::heal(const IdView& unitId, int value)
 {
     using namespace game;
 

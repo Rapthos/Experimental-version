@@ -257,7 +257,6 @@ static Hooks getGameHooks()
         {CBuildingBranchApi::get().constructor, buildingBranchCtorHooked},
         // Allow alchemists to buff retreating units
         {CBatAttackGiveAttackApi::vftable()->canPerform, giveAttackCanPerformHooked},
-        {CBatAttackGiveAttackApi::vftable()->onHit, giveAttackOnHitHooked},
         // Random scenario generator
         {CMenuNewSkirmishSingleApi::get().constructor, menuNewSkirmishSingleCtorHooked, (void**)&orig.menuNewSkirmishSingleCtor},
         {CMenuNewSkirmishHotseatApi::get().constructor, menuNewSkirmishHotseatCtorHooked, (void**)&orig.menuNewSkirmishHotseatCtor},
@@ -492,6 +491,12 @@ static Hooks getGameHooks()
         {battle.setUnitStatus, setUnitStatusHooked, (void**)&orig.setUnitStatus},
     };
     // clang-format on
+
+    if (userSettings().alchemistKeepsAttackCount != baseSettings().alchemistKeepsAttackCount)
+    {
+        hooks.emplace_back(
+            HookInfo{CBatAttackGiveAttackApi::vftable()->onHit, giveAttackOnHitHooked});
+    }
 
     if (userSettings().engine.sendRefreshInfoObjectCountLimit) {
         // Fix incomplete scenario loading when its object size exceed network message buffer size

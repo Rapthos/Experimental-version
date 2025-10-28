@@ -140,13 +140,14 @@ public:
     UnitView getUnitTurn() const;
     bool setUnitAttackCount(const IdView& unitId, int value);
     bool addUnitModifier(const IdView& unitId, const IdView& unitId2, const std::string& modifierId);
-    bool setHeal(const IdView& unitId, int value);
+    int heal(const IdView& unitId, int value);
+    int setHealth(const IdView& unitId, int value);
     bool setShatteredArmor(const IdView& unitId, int value);
     bool setPoison(const IdView& unitId, int value, bool isLong);
     bool setFrostbite(const IdView& unitId, int value, bool isLong);
     bool setBlister(const IdView& unitId, int value, bool isLong);
     bool setParalyze(const IdView& unitId);
-    bool setCure(const IdView& unitId);
+    bool cure(const IdView& unitId);
 
 protected:
     template <typename T>
@@ -211,13 +212,14 @@ protected:
         view["GetUnitTurn"] = &BattleMsgDataView::getUnitTurn;
         view["SetUnitAttackCount"] = &BattleMsgDataView::setUnitAttackCount;
         view["AddUnitModifier"] = &BattleMsgDataView::addUnitModifier;
-        view["SetHeal"] = &BattleMsgDataView::setHeal;
+        view["Heal"] = &BattleMsgDataView::heal;
+        view["SetHealth"] = &BattleMsgDataView::setHealth;
         view["SetShatteredArmor"] = &BattleMsgDataView::setShatteredArmor;
         view["SetPoison"] = &BattleMsgDataView::setPoison;
         view["SetFrostbite"] = &BattleMsgDataView::setFrostbite;
         view["SetBlister"] = &BattleMsgDataView::setBlister;
         view["SetParalyze"] = &BattleMsgDataView::setParalyze;
-        view["SetCure"] = &BattleMsgDataView::setCure;
+        view["Cure"] = &BattleMsgDataView::cure;
     }
 
 private:

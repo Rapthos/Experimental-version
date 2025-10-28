@@ -398,6 +398,7 @@ static void readSettings(const sol::table& table, Settings& settings)
     settings.freeTransformSelfAttack = readSetting(table, "freeTransformSelfAttack", defaultSettings().freeTransformSelfAttack);
     settings.freeTransformSelfAttackInfinite = readSetting(table, "freeTransformSelfAttackInfinite", defaultSettings().freeTransformSelfAttackInfinite);
     settings.fixEffectiveHpFormula = readSetting(table, "fixEffectiveHpFormula", defaultSettings().fixEffectiveHpFormula);
+    settings.alchemistKeepsAttackCount = readSetting(table, "alchemistKeepsAttackCount", defaultSettings().alchemistKeepsAttackCount, baseSettings().alchemistKeepsAttackCount);
     // People keep forgetting to turn this off in release packages
     //settings.debugMode = readSetting(table, "debugHooks", defaultSettings().debugMode);
     // clang-format on
@@ -507,6 +508,7 @@ const Settings& baseSettings()
         settings.movementCost.show = false;
         settings.battle.fallbackAction = game::BattleAction::Defend;
         settings.debugMode = false;
+        settings.alchemistKeepsAttackCount = false;
 
         initialized = true;
     }

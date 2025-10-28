@@ -224,6 +224,8 @@ struct Settings
     } battle;
 
     bool debugMode;
+
+    bool alchemistKeepsAttackCount;
 };
 
 const Settings& baseSettings();

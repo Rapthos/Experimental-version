@@ -271,10 +271,20 @@ bool BattleMsgDataView::isUnitResistantToSourceById(const IdView& unitId, int so
 {
     using namespace game;
 
+    auto& fn = gameFunctions();
+
     auto attackSource{hooks::getAttackSourceById(static_cast<game::AttackSourceId>(sourceId))};
     if (!attackSource) {
         return false;
     }
+
+    const CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
+    const IUsSoldier* targetSoldier = fn.castUnitImplToSoldier(targetUnit->unitImpl);
+    const LImmuneCat* immuneCat = targetSoldier->vftable->getImmuneByAttackSource(targetSoldier,
+                                                                                  attackSource);
+
+    if (immuneCat->id == ImmuneCategories::get().always->id)
+        return true;
 
     return !BattleMsgDataApi::get().isUnitAttackSourceWardRemoved(battleMsgData, &unitId.id,
                                                                   attackSource);
@@ -289,10 +299,20 @@ bool BattleMsgDataView::isUnitResistantToClassById(const IdView& unitId, int cla
 {
     using namespace game;
 
+    auto& fn = gameFunctions();
+
     auto attackClass{hooks::getAttackClassById(static_cast<AttackClassId>(classId))};
     if (!attackClass) {
         return false;
     }
+
+    const CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
+    const IUsSoldier* targetSoldier = fn.castUnitImplToSoldier(targetUnit->unitImpl);
+    const LImmuneCat* immuneCat = targetSoldier->vftable->getImmuneByAttackClass(targetSoldier,
+                                                                                  attackClass);
+
+    if (immuneCat->id == ImmuneCategories::get().always->id)
+        return true;
 
     return BattleMsgDataApi::get().isUnitAttackClassWardRemoved(battleMsgData, &unitId.id,
                                                                 attackClass);
@@ -636,6 +656,58 @@ bool BattleMsgDataView::cure(const IdView& unitId)
     BattleMsgDataApi::get().setUnitStatus(battleMsgData, &unitId.id, BattleStatus::Cured, true);
 
     return true;
+}
+
+void BattleMsgDataView::removeAttackSourceWard(const IdView& unitId, int attackSourceId)
+{
+    using namespace game;
+    auto& fn = gameFunctions();
+
+    auto* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+
+    const AttackSourceId srcId{static_cast<AttackSourceId>(attackSourceId)};
+
+    auto attackSource{hooks::getAttackSourceById(static_cast<game::AttackSourceId>(attackSourceId))};
+
+    if (!attackSource) {
+        return;
+    }
+
+    const CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
+    const IUsSoldier* targetSoldier = fn.castUnitImplToSoldier(targetUnit->unitImpl);
+    const LImmuneCat* immuneCat = targetSoldier->vftable->getImmuneByAttackSource(targetSoldier,
+                                                                                  attackSource);
+
+    if (immuneCat->id == ImmuneCategories::get().always->id)
+        return;
+
+    BattleMsgDataApi::get().removeUnitAttackSourceWard(battle, &unitId.id, attackSource);
+}
+
+void BattleMsgDataView::removeAttackClassWard(const IdView& unitId, int attackClassId)
+{
+    using namespace game;
+    auto& fn = gameFunctions();
+
+    auto* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+
+    auto attackClass{hooks::getAttackClassById(static_cast<AttackClassId>(attackClassId))};
+    if (!attackClass) {
+        return;
+    }
+
+    const CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
+    const IUsSoldier* targetSoldier = fn.castUnitImplToSoldier(targetUnit->unitImpl);
+    const LImmuneCat* immuneCat = targetSoldier->vftable->getImmuneByAttackClass(targetSoldier,
+                                                                                 attackClass);
+
+    if (immuneCat->id == ImmuneCategories::get().always->id)
+        return;
+
+
+    BattleMsgDataApi::get().removeUnitAttackClassWard(battle, &unitId.id, attackClass);
 }
 
 } // namespace bindings

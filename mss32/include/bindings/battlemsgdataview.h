@@ -149,6 +149,9 @@ public:
     bool setParalyze(const IdView& unitId);
     bool cure(const IdView& unitId);
 
+    void removeAttackSourceWard(const IdView& unitId, int attackSourceId);
+    void removeAttackClassWard(const IdView& unitId, int attackClassId);
+
 protected:
     template <typename T>
     static void bindAccessMethods(T& view)
@@ -220,6 +223,8 @@ protected:
         view["SetBlister"] = &BattleMsgDataView::setBlister;
         view["SetParalyze"] = &BattleMsgDataView::setParalyze;
         view["Cure"] = &BattleMsgDataView::cure;
+        view["RemoveAttackSourceWard"] = &BattleMsgDataView::removeAttackSourceWard;
+        view["RemoveAttackClassWard"] = &BattleMsgDataView::removeAttackClassWard;
     }
 
 private:

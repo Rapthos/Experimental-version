@@ -27,6 +27,7 @@
 #include "midgardobjectmap.h"
 #include "modifierutils.h"
 #include "usunit.h"
+#include "ussoldier.h"
 
 namespace hooks {
 
@@ -141,6 +142,43 @@ bool __fastcall bestowWardsMethod15Hooked(game::CBatAttackBestowWards* thisptr,
                                           game::BattleMsgData* battleMsgData)
 {
     return true;
+}
+
+bool __fastcall bestowWardsAttackIsImmuneHooked(game::CBatAttackBestowWards* thisptr,
+                                                int /*%edx*/,
+                                                game::IMidgardObjectMap* objectMap,
+                                                game::BattleMsgData* battleMsgData,
+                                                game::CMidgardID* unitId)
+{
+    using namespace game;
+
+    const auto& battle = BattleMsgDataApi::get();
+
+    const auto& fn = gameFunctions();
+    IAttack* attack = fn.getAttackById(objectMap, &thisptr->attackImplUnitId, thisptr->attackNumber,
+                                       false);
+
+    if (attack == NULL)
+        return false;
+
+    const CMidUnit* targetUnit = fn.findUnitById(objectMap, unitId);
+    const IUsSoldier* targetSoldier = fn.castUnitImplToSoldier(targetUnit->unitImpl);
+
+    const LAttackClass* attackClass = attack->vftable->getAttackClass(attack);
+    const LImmuneCat* immuneCatC = targetSoldier->vftable->getImmuneByAttackClass(targetSoldier,
+                                                                                  attackClass);
+
+    bool result = false;
+    if (immuneCatC->id == ImmuneCategories::get().once->id) {
+        result = !battle.isUnitAttackClassWardRemoved(battleMsgData, unitId, attackClass);
+        if (result)
+            battle.removeUnitAttackClassWard(battleMsgData, unitId, attackClass);
+    } else if (immuneCatC->id == ImmuneCategories::get().always->id) {
+        result = true;
+    }
+
+    return result;
+
 }
 
 } // namespace hooks

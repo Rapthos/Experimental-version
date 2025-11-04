@@ -233,6 +233,7 @@
 #include "battlemsgdataview.h"
 #include <sol/sol.hpp>
 #include <scripts.h>
+#include <batviewer.h>
 
 namespace hooks {
 
@@ -319,6 +320,8 @@ static Hooks getGameHooks()
          */
         // Fixes modifiers getting lost after modified unit is untransformed
         {CBatAttackBestowWardsApi::vftable()->onHit, bestowWardsAttackOnHitHooked},
+        // Create immune to heal
+        {CBatAttackBestowWardsApi::vftable()->isImmune, bestowWardsAttackIsImmuneHooked},
         // Fix bestow wards with double attack where modifiers granted by first attack are removed
         {battle.afterBattleTurn, afterBattleTurnHooked},
         // Allow any attack with QTY_HEAL > 0 to heal units when battle ends (just like ordinary heal does)
@@ -489,6 +492,8 @@ static Hooks getGameHooks()
         {CBatLogicApi::get().battleTurn, battleTurnHooked, (void**)&orig.battleTurn},
         //Fixed an issue where a unit with "attackCount" 3 or more incorrectly reduce its attack count.
         {battle.setUnitStatus, setUnitStatusHooked, (void**)&orig.setUnitStatus},
+        //For future updates
+        {BattleViewerInterfApi::vftable()->battleEnd, battleEndHooked, (void**)&orig.battleEnd},
     };
     // clang-format on
 
@@ -1850,7 +1855,7 @@ void __stdcall afterBattleTurnHooked(game::BattleMsgData* battleMsgData,
     currUnitId = *unitId;
 
     std::optional<sol::environment> env;
-    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnAfterBattleTurn", env, false,
+    auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnAfterBattleTurn", env, false,
                                true);
     if (f) {
         try {
@@ -1908,7 +1913,7 @@ void __stdcall beforeBattleTurnHooked(game::BattleMsgData* battleMsgData,
     freeTransformSelf.turnCount++;
 
     std::optional<sol::environment> env;
-    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnBeforeBattleTurn", env, false,
+    auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnBeforeBattleTurn", env, false,
                                true);
     if (f) {
         try {
@@ -2893,13 +2898,79 @@ void __fastcall setUnitStatusHooked(const game::BattleMsgData* battleMsgData,
     using namespace game;
 
     auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+    auto& fn = gameFunctions();
+    auto objectMap = getObjectMap();
 
     if (BattleStatus(status) == BattleStatus::Defend && enable) 
     {
         while (BattleMsgDataApi::get().decreaseUnitAttacks(battle, unitId));
     }
 
+    if (BattleStatus(status) == BattleStatus::Dead && enable)
+    {
+        //Fixed a bug where the buff wouldn't disappear after the bestow ward died. Hard remove (false) InstantBuffRemoval
+        if (userSettings().instantBuffRemoval != baseSettings().instantBuffRemoval) {
+            auto objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+            auto unitInfo = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, unitId);
+            auto modifiedUnitIds = getModifiedUnitIds(unitInfo);
+            for (auto it = modifiedUnitIds.begin(); it != modifiedUnitIds.end(); it++)
+                removeModifiers(battle, objectMap, unitInfo, &(*it));
+            resetModifiedUnitsInfo(unitInfo);
+        }
+        
+        std::optional<sol::environment> env;
+        auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnUnitDeath", env, false,
+                                   true);
+        if (f) {
+            try {
+                CMidUnit* cMidUnit = fn.findUnitById(objectMap, unitId);
+                const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
+                const bindings::UnitView unit{cMidUnit};
+
+                (*f)(battleMsg, unit);
+            } catch (const std::exception& e) {
+                showErrorMessageBox(fmt::format("Failed to run 'OnUnitDeath' script.\n"
+                                                "Reason: '{:s}'",
+                                                e.what()));
+            }
+        }
+
+    }
     getOriginalFunctions().setUnitStatus(battleMsgData, unitId, BattleStatus(status), enable);
+}
+
+//For future updates
+void __fastcall battleEndHooked(game::IBatViewer* thisptr,
+                                int /*%edx*/,
+                                const game::BattleMsgData* battleMsgData,
+                                const game::CMidgardID* a3)
+{
+    using namespace game;
+
+    getOriginalFunctions().battleEnd(thisptr, battleMsgData, a3);
+
+    /*
+    auto& fn = gameFunctions();
+
+    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+    auto objectMap = getObjectMap();
+
+    std::optional<sol::environment> env;
+    auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnBattleEnd", env, false, true);
+    if (f) {
+        try {
+            const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
+
+            (*f)(battleMsg);
+        } catch (const std::exception& e) {
+            showErrorMessageBox(fmt::format("Failed to run 'OnBattleEnd2' script.\n"
+                                            "Reason: '{:s}'",
+                                            e.what()));
+        }
+    }*/
+   
+ 
+    //getOriginalFunctions().battleEnd(thisptr, battle, a3);
 }
 
 } // namespace hooks

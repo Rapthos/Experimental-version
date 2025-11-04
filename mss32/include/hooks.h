@@ -28,6 +28,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <batviewer.h>
 
 namespace game {
 struct DialogScriptData;
@@ -333,6 +334,12 @@ void __fastcall setUnitStatusHooked(const game::BattleMsgData* thisptr,
                            const game::CMidgardID* unitId,
                            const int status,
                            bool enable);
+
+void __fastcall battleEndHooked(game::IBatViewer* thisptr,
+                                int /*%edx*/,
+                                const game::BattleMsgData* battleMsgData,
+                                const game::CMidgardID* a3);
+
 } // namespace hooks
 
 #endif // HOOKS_H

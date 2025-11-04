@@ -40,6 +40,7 @@
 #include <spdlog/spdlog.h>
 
 #include "modifierview.h"
+#include <version.h>
 
 namespace hooks {
 
@@ -55,6 +56,7 @@ bool __fastcall removeModifierHooked(game::CMidUnit* thisptr,
                                      const game::CMidgardID* modifierId)
 {
     using namespace game;
+    auto version = gameVersion();
 
     const auto& umModifierApi = CUmModifierApi::get();
 
@@ -63,15 +65,16 @@ bool __fastcall removeModifierHooked(game::CMidUnit* thisptr,
     }
 
     bool OnRemoveModifier = true;
-    std::optional<sol::environment> env;
-    auto f = getScriptFunction(scriptsFolder() / "hooks.lua", "OnRemoveModifier", env, false, true);
-    if (f) {
-        try {
-            const bindings::UnitView target{thisptr};
-            const auto unitModifier = getUnitModifier(modifierId);
-            const bindings::ModifierView mods{unitModifier->vftable->createModifier(unitModifier)};
+    const bindings::UnitView target{thisptr};
+    const auto unitModifier = getUnitModifier(modifierId);
+    const bindings::ModifierView mods{unitModifier->vftable->createModifier(unitModifier)};
 
-            OnRemoveModifier = (*f)(target, mods);
+    std::optional<sol::environment> env;
+    auto hookOnRemoveModifier = getScriptFunction(scriptsFolder() / "hooks/modifiers.lua",
+                                              "OnRemoveModifier", env, false, true);
+    if (version != GameVersion::ScenarioEditor && hookOnRemoveModifier) {
+        try {
+            OnRemoveModifier = (*hookOnRemoveModifier)(target, mods);
         } catch (const std::exception& e) {
             showErrorMessageBox(fmt::format("Failed to run 'OnRemoveModifier' script.\n"
                                             "Reason: '{:s}'",
@@ -107,7 +110,22 @@ bool __fastcall removeModifierHooked(game::CMidUnit* thisptr,
                 notifyModifiersChanged(thisptr->unitImpl);
             }
 
+            /* We realy dont need this
+            auto ModifierRemoved = getScriptFunction(scriptsFolder() / "hooks/modifiers.lua",
+                                                     "ModifierRemoved",
+                                       env, false, true);
+            if (ModifierRemoved) {
+                try {
+                    (*ModifierRemoved)(target, mods);
+                } catch (const std::exception& e) {
+                    showErrorMessageBox(fmt::format("Failed to run 'OnRemoveModifier' script.\n"
+                                                    "Reason: '{:s}'",
+                                                    e.what()));
+                }
+            }
+            */
             modifier->vftable->destructor(modifier, true);
+            
             return true;
         }
     }

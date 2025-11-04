@@ -24,7 +24,12 @@
 #include "midunit.h"
 #include "originalfunctions.h"
 #include "unitinfolist.h"
-#include "unitinfolist.h"
+
+#include "scripts.h"
+#include "battlemsgdataviewmutable.h"
+#include "gameutils.h"
+#include <spdlog/spdlog.h>
+#include "groupview.h"
 
 
 namespace hooks {
@@ -106,7 +111,42 @@ void __fastcall updateGroupsIfBattleIsOverHooked(game::CBatLogic* thisptr,
 
         batLogicApi.restoreLeaderPositionsAfterDuel(thisptr->objectMap, thisptr->battleMsgData);
 
+        /*std::optional<sol::environment> env;
+        auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnBattleEnd", env, false, true);
+        if (f) {
+            try {
+                auto objectMap = hooks::getObjectMap();
+                const bindings::BattleMsgDataView battleMsg{battleMsgData2, objectMap};
+                const auto winnerGroup = hooks::getGroup(objectMap, &winnerGroup2Id);
+                const bindings::GroupView win{winnerGroup, objectMap, &winnerGroup2Id}; 
+
+                (*f)(battleMsg, win);
+            } catch (const std::exception& e) {
+                showErrorMessageBox(fmt::format("Failed to run 'OnBattleEnd' script.\n"
+                                                "Reason: '{:s}'",
+                                                e.what()));
+            }
+        }*/
+
         listApi.destructor(&unitInfos);
+
+        std::optional<sol::environment> env;
+        auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnBattleEnd", env, false, true);
+        if (f) {
+            try {
+                auto objectMap = hooks::getObjectMap();
+                const bindings::BattleMsgDataView battleMsg{battleMsgData2, objectMap};
+                const auto winnerGroup = hooks::getGroup(objectMap, &winnerGroup2Id);
+                const bindings::GroupView win{winnerGroup, objectMap, &winnerGroup2Id};
+
+                (*f)(battleMsg, win);
+            } catch (const std::exception& e) {
+                showErrorMessageBox(fmt::format("Failed to run 'OnBattleEnd' script.\n"
+                                                "Reason: '{:s}'",
+                                                e.what()));
+            }
+        }
+    
     }
 }
 

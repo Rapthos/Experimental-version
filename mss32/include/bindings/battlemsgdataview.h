@@ -143,10 +143,8 @@ public:
     int heal(const IdView& unitId, int value);
     int setHealth(const IdView& unitId, int value);
     bool setShatteredArmor(const IdView& unitId, int value);
-    bool setPoison(const IdView& unitId, int value, bool isLong);
-    bool setFrostbite(const IdView& unitId, int value, bool isLong);
-    bool setBlister(const IdView& unitId, int value, bool isLong);
-    bool setParalyze(const IdView& unitId);
+
+    bool setStatus(const IdView& unitId, int status, int value, bool isLong);
     bool cure(const IdView& unitId);
 
     void removeAttackSourceWard(const IdView& unitId, int attackSourceId);
@@ -218,10 +216,7 @@ protected:
         view["Heal"] = &BattleMsgDataView::heal;
         view["SetHealth"] = &BattleMsgDataView::setHealth;
         view["SetShatteredArmor"] = &BattleMsgDataView::setShatteredArmor;
-        view["SetPoison"] = &BattleMsgDataView::setPoison;
-        view["SetFrostbite"] = &BattleMsgDataView::setFrostbite;
-        view["SetBlister"] = &BattleMsgDataView::setBlister;
-        view["SetParalyze"] = &BattleMsgDataView::setParalyze;
+        view["SetStatus"] = &BattleMsgDataView::setStatus;
         view["Cure"] = &BattleMsgDataView::cure;
         view["RemoveAttackSourceWard"] = &BattleMsgDataView::removeAttackSourceWard;
         view["RemoveAttackClassWard"] = &BattleMsgDataView::removeAttackClassWard;

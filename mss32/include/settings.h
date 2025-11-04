@@ -226,6 +226,7 @@ struct Settings
     bool debugMode;
 
     bool alchemistKeepsAttackCount;
+    bool instantBuffRemoval;
 };
 
 const Settings& baseSettings();

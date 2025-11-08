@@ -234,6 +234,8 @@
 #include <sol/sol.hpp>
 #include <scripts.h>
 #include <batviewer.h>
+#include "groupview.h"
+#include "midgardobjectmap.h"
 
 namespace hooks {
 
@@ -2900,15 +2902,18 @@ void __fastcall setUnitStatusHooked(const game::BattleMsgData* battleMsgData,
     auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
     auto& fn = gameFunctions();
     auto objectMap = getObjectMap();
+    auto constMap = const_cast<game::IMidgardObjectMap*>(objectMap);
 
     if (BattleStatus(status) == BattleStatus::Defend && enable) 
     {
         while (BattleMsgDataApi::get().decreaseUnitAttacks(battle, unitId));
     }
 
-    if (BattleStatus(status) == BattleStatus::Dead && enable)
-    {
-        //Fixed a bug where the buff wouldn't disappear after the bestow ward died. Hard remove (false) InstantBuffRemoval
+    getOriginalFunctions().setUnitStatus(battleMsgData, unitId, BattleStatus(status), enable);
+
+    if (BattleStatus(status) == BattleStatus::Dead && enable) {
+        // Fixed a bug where the buff wouldn't disappear after the bestow ward died. Hard remove
+        // (false) InstantBuffRemoval
         if (userSettings().instantBuffRemoval != baseSettings().instantBuffRemoval) {
             auto objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
             auto unitInfo = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, unitId);
@@ -2917,7 +2922,7 @@ void __fastcall setUnitStatusHooked(const game::BattleMsgData* battleMsgData,
                 removeModifiers(battle, objectMap, unitInfo, &(*it));
             resetModifiedUnitsInfo(unitInfo);
         }
-        
+
         std::optional<sol::environment> env;
         auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnUnitDeath", env, false,
                                    true);
@@ -2934,9 +2939,43 @@ void __fastcall setUnitStatusHooked(const game::BattleMsgData* battleMsgData,
                                                 e.what()));
             }
         }
-
     }
-    getOriginalFunctions().setUnitStatus(battleMsgData, unitId, BattleStatus(status), enable);
+
+    if (BattleStatus(status) == BattleStatus::Dead && !enable)
+    {
+        //Revive use QtyHeal
+        if (userSettings().reviveUsesQtyHeal != baseSettings().reviveUsesQtyHeal) {
+            auto& turns = battleMsgData->turnsOrder;
+            CMidgardID turnsUnitId = turns[0].unitId;
+
+            const CMidUnit* targetUnit = fn.findUnitById(objectMap, &turnsUnitId);
+            const CMidUnit* curUnit = fn.findUnitById(objectMap, unitId);
+            const IUsUnit* impl = targetUnit->unitImpl;
+            const IAttack* attack = getAttack(impl, true, false);
+            int qtyHeal = attack->vftable->getQtyHeal(attack);
+
+            if (qtyHeal > 0) {
+                int curUnitHp = curUnit->currentHp;
+                int setHeal = qtyHeal - curUnitHp;
+                VisitorApi::get().changeUnitHp(unitId, setHeal, constMap, 1);
+            }
+        }
+        std::optional<sol::environment> env;
+        auto OnResurrection = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnResurrection", env, false, true);
+        if (OnResurrection) {
+            try {
+                const CMidUnit* cMidUnit = fn.findUnitById(objectMap, unitId);
+                const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
+                const bindings::UnitView unit{cMidUnit};
+
+                (*OnResurrection)(battleMsg, unit);
+            } catch (const std::exception& e) {
+                showErrorMessageBox(fmt::format("Failed to run 'OnUnitDeath' script.\n"
+                                                "Reason: '{:s}'",
+                                                e.what()));
+            }
+        }
+    }
 }
 
 //For future updates
@@ -2949,25 +2988,34 @@ void __fastcall battleEndHooked(game::IBatViewer* thisptr,
 
     getOriginalFunctions().battleEnd(thisptr, battleMsgData, a3);
 
-    /*
     auto& fn = gameFunctions();
 
     auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
     auto objectMap = getObjectMap();
+    auto constMap = const_cast<IMidgardObjectMap*>(objectMap);
+
+    CBatLogic test{};
+    test.battleMsgData = battle;
+    test.objectMap = constMap;
+
+    CMidgardID winnerGroup;
+    CBatLogicApi::get().getBattleWinnerGroupId(&test, &winnerGroup);
 
     std::optional<sol::environment> env;
     auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnBattleEnd", env, false, true);
     if (f) {
         try {
-            const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
+            //const bindings::BattleMsgDataView battleMsg{battleMsgData, objectMap};
+            const auto getWinnerGroup = hooks::getGroup(objectMap, &winnerGroup);
+            const bindings::GroupView win{getWinnerGroup, objectMap, &winnerGroup};
 
-            (*f)(battleMsg);
+            (*f)(win);
         } catch (const std::exception& e) {
             showErrorMessageBox(fmt::format("Failed to run 'OnBattleEnd2' script.\n"
                                             "Reason: '{:s}'",
                                             e.what()));
         }
-    }*/
+    }
    
  
     //getOriginalFunctions().battleEnd(thisptr, battle, a3);

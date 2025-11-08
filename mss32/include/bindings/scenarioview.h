@@ -128,8 +128,6 @@ public:
 
     int addUnitXP(const IdView& unitId, int value);
     bool heal(const IdView& unitId, int value);
-    bool hasUnitModifier(const IdView& unitId, const std::string& modifierId);
-    bool hasUnitModifierByString(const std::string& unitId, const std::string& modifierId);
     bool addUnitModifier(const IdView& unitId, const std::string& modifierId);
     bool removeUnitModifier(const IdView& unitId, const std::string& modifierId);
 

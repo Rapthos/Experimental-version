@@ -29,7 +29,6 @@
 #include "stackview.h"
 
 #include "modifierutils.h"
-#include "midgardobjectmap.h"
 #include "batattackutils.h"
 #include "visitors.h"
 #include "settings.h"
@@ -459,7 +458,7 @@ int BattleMsgDataView::getUnitAttackCount(const IdView& unitId) const
 }
 
 UnitView BattleMsgDataView::getUnitTurn() const
-{
+{   
     auto& turns = battleMsgData->turnsOrder;
     auto unitId = turns[0].unitId;
     return UnitView{game::gameFunctions().findUnitById(objectMap, &unitId)};
@@ -493,7 +492,7 @@ bool BattleMsgDataView::addUnitModifier(const IdView& unitId, const IdView& unit
 
     auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
 
-    auto objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    IMidgardObjectMap* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
     CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId2.id);
 
     const auto& modId = IdView{modifierId};
@@ -509,18 +508,26 @@ int BattleMsgDataView::heal(const IdView& unitId, int value)
 
     using namespace game;
     const auto& fn = gameFunctions();
+    const auto& visitors = VisitorApi::get();
 
     if (BattleMsgDataApi::get().getUnitStatus(battleMsgData, &unitId.id, BattleStatus::Dead))
         return 0;
 
     int heal = std::clamp(value, -9999, 9999);
 
-    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+    BattleMsgData* battle = const_cast<game::BattleMsgData*>(battleMsgData);
 
-    auto objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    IMidgardObjectMap* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
     CMidUnit* targetUnit = fn.findUnitById(objectMap, &unitId.id);
 
-    int qtyHealed = hooks::heal(objectMap, battle, targetUnit, heal);
+    int hpBefore = targetUnit->currentHp;
+
+    visitors.changeUnitHp(&targetUnit->id, heal, objectMap, 1);
+
+    int hpAfter = targetUnit->currentHp;
+    BattleMsgDataApi::get().setUnitHp(battle, &targetUnit->id, hpAfter);
+
+    int qtyHealed = hpAfter - hpBefore;
 
     if (targetUnit->currentHp == 0) 
     {
@@ -685,10 +692,10 @@ void BattleMsgDataView::removeAttackClassWard(const IdView& unitId, int attackCl
     using namespace game;
     auto& fn = gameFunctions();
 
-    auto objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
-    auto battle = const_cast<game::BattleMsgData*>(battleMsgData);
+    IMidgardObjectMap* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+    BattleMsgData* battle = const_cast<game::BattleMsgData*>(battleMsgData);
 
-    auto attackClass{hooks::getAttackClassById(static_cast<AttackClassId>(attackClassId))};
+    const LAttackClass* attackClass = hooks::getAttackClassById(static_cast<AttackClassId>(attackClassId));
     if (!attackClass) {
         return;
     }
@@ -705,4 +712,16 @@ void BattleMsgDataView::removeAttackClassWard(const IdView& unitId, int attackCl
     BattleMsgDataApi::get().removeUnitAttackClassWard(battle, &unitId.id, attackClass);
 }
 
+void BattleMsgDataView::setRevivedStatus(const IdView& unitId, bool status)
+{
+    using namespace game;
+
+    UnitInfo* info = BattleMsgDataApi::get().getUnitInfoById(battleMsgData, &unitId.id);
+    if (!info) {
+        return;
+    }
+
+    info->unitFlags.parts.revived = status;
+
+}
 } // namespace bindings

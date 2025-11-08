@@ -41,6 +41,7 @@
 
 #include "modifierview.h"
 #include <version.h>
+#include <gameutils.h>
 
 namespace hooks {
 
@@ -93,6 +94,9 @@ bool __fastcall removeModifierHooked(game::CMidUnit* thisptr,
         }
 
         if (modifier->data->modifierId == *modifierId) {
+
+            int maxHpBefore = getUnitHpMax(thisptr);
+
             auto prev = modifier->data->prev;
             auto next = modifier->data->next;
             if (next) {
@@ -124,6 +128,15 @@ bool __fastcall removeModifierHooked(game::CMidUnit* thisptr,
                 }
             }
             */
+            int maxHp = getUnitHpMax(thisptr);
+
+            if (version != GameVersion::ScenarioEditor && maxHp > maxHpBefore)
+            {
+                int diff = maxHp - maxHpBefore;
+                game::IMidgardObjectMap* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());
+                VisitorApi::get().changeUnitHp(&thisptr->id, diff, objectMap, 1);
+            }
+
             modifier->vftable->destructor(modifier, true);
             
             return true;

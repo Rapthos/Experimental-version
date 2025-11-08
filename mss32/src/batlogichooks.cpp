@@ -135,11 +135,11 @@ void __fastcall updateGroupsIfBattleIsOverHooked(game::CBatLogic* thisptr,
         if (f) {
             try {
                 auto objectMap = hooks::getObjectMap();
-                const bindings::BattleMsgDataView battleMsg{battleMsgData2, objectMap};
+                //const bindings::BattleMsgDataView battleMsg{battleMsgData2, objectMap};
                 const auto winnerGroup = hooks::getGroup(objectMap, &winnerGroup2Id);
                 const bindings::GroupView win{winnerGroup, objectMap, &winnerGroup2Id};
 
-                (*f)(battleMsg, win);
+                (*f)(win);
             } catch (const std::exception& e) {
                 showErrorMessageBox(fmt::format("Failed to run 'OnBattleEnd' script.\n"
                                                 "Reason: '{:s}'",

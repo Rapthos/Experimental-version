@@ -57,14 +57,9 @@
 #include <sol/sol.hpp>
 
 #include "game.h"
-#include "midgardid.h"
 #include "unitutils.h"
-#include "batattackutils.h"
 #include "visitors.h"
-#include "groupupgradehooks.h"
 #include <modifierutils.h>
-#include <midunithooks.h>
-#include <hooks.h>
 
 namespace bindings {
 
@@ -144,8 +139,6 @@ void ScenarioView::bind(sol::state& lua)
     scenario["forEachMarket"] = &ScenarioView::forEachMarket;
     scenario["AddUnitXP"] = sol::overload<>(&ScenarioView::addUnitXP);
     scenario["Heal"] = sol::overload<>(&ScenarioView::heal);
-    scenario["HasUnitModifier"] = sol::overload<>(&ScenarioView::hasUnitModifierByString,
-                                                  &ScenarioView::hasUnitModifier);
     scenario["AddUnitModifier"] = sol::overload<>(&ScenarioView::addUnitModifier);
     scenario["RemoveUnitModifier"] = sol::overload<>(&ScenarioView::removeUnitModifier);
 }
@@ -1134,26 +1127,6 @@ bool ScenarioView::heal(const IdView& unitId, int value)
     visitors.changeUnitHp(&unit->id, value, objMap, 1);
 
     return true;
-}
-
-bool ScenarioView::hasUnitModifier(const IdView &unitId, const std::string &modifierId)
-{
-    using namespace game;
-    auto &fn = gameFunctions();
-
-    auto unit = fn.findUnitById(objectMap, &unitId.id);
-
-    if (unit == nullptr)
-        return false;
-
-    auto modId = IdView{modifierId};
-
-    return hooks::hasModifier( unit->unitImpl, &modId.id );
-}
-
-bool ScenarioView::hasUnitModifierByString(const std::string& unitId, const std::string& modifierId)
-{
-    return hasUnitModifier(IdView{unitId}, modifierId);
 }
 
 bool ScenarioView::addUnitModifier(const IdView& unitId, const std::string& modifierId)

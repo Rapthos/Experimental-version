@@ -463,8 +463,6 @@ bool applyModifier(const game::CMidgardID* unitId,
 {
     using namespace game;
 
-    //int maxHpBefore = getUnitHpMax(targetUnit);
-
     //Fixed situation, when OnAddModifier return false, but battle modifier can be applied on unit
     bool applyed = CMidUnitApi::get().addModifier(targetUnit, modifierId);
     if (!applyed) {
@@ -490,13 +488,8 @@ bool applyModifier(const game::CMidgardID* unitId,
             resetUnitAttackClassWard(battleMsgData, &targetUnit->id, umUnit);
     }
 
+    // Unit HP adjustment
     BattleMsgDataApi::get().setUnitHp(battleMsgData, &targetUnit->id, targetUnit->currentHp);
-
-   /* int maxHp = getUnitHpMax(targetUnit);
-    if (maxHp > maxHpBefore) {
-        int diff = maxHp - maxHpBefore;
-        BattleMsgDataApi::get().setUnitHp(battleMsgData, &targetUnit->id, targetUnit->currentHp + diff);
-    }*/
 
     return true;
 }
@@ -519,10 +512,10 @@ void removeModifier(game::BattleMsgData* battleMsgData,
 
         BattleMsgDataApi::get().resetUnitModifierInfo(battleMsgData, &unit->id, modifierId);
 
-        // Fixes overhealth after removing +hp modifier
+        // Unit HP adjustment
         int maxHp = getUnitHpMax(unit);
         if (unit->currentHp > maxHp)
-            BattleMsgDataApi::get().setUnitHp(battleMsgData, &unit->id, maxHp);
+            BattleMsgDataApi::get().setUnitHp(battleMsgData, &unit->id, unit->currentHp);
     }
 }
 
@@ -815,7 +808,8 @@ bool addModifier(game::CMidUnit* unit, const game::CMidgardID* modifierId, bool 
     int maxHp = getUnitHpMax(unit);
 
     //Prevent crash in Scenario Editor
-    if (version != GameVersion::ScenarioEditor && maxHp > maxHpBefore)
+    //Add extra HP if got +maxHp and remove if -maxHp
+    if (version != GameVersion::ScenarioEditor && (maxHp > maxHpBefore || (maxHp < maxHpBefore && unit->currentHp > maxHp)))
     {
         int diff = maxHp - maxHpBefore;
         game::IMidgardObjectMap* objectMap = const_cast<game::IMidgardObjectMap*>(hooks::getObjectMap());

@@ -400,6 +400,7 @@ static void readSettings(const sol::table& table, Settings& settings)
     settings.fixEffectiveHpFormula = readSetting(table, "fixEffectiveHpFormula", defaultSettings().fixEffectiveHpFormula);
     settings.alchemistKeepsAttackCount = readSetting(table, "alchemistKeepsAttackCount", defaultSettings().alchemistKeepsAttackCount);
     settings.instantBuffRemoval = readSetting(table, "instantBuffRemoval", defaultSettings().instantBuffRemoval);
+    settings.reviveUsesQtyHeal = readSetting(table, "reviveUsesQtyHeal", defaultSettings().reviveUsesQtyHeal);
     // People keep forgetting to turn this off in release packages
     //settings.debugMode = readSetting(table, "debugHooks", defaultSettings().debugMode);
     // clang-format on
@@ -511,6 +512,7 @@ const Settings& baseSettings()
         settings.debugMode = false;
         settings.alchemistKeepsAttackCount = false;
         settings.instantBuffRemoval = false;
+        settings.reviveUsesQtyHeal = false;
 
         initialized = true;
     }

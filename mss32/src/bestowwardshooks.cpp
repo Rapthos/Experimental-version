@@ -107,17 +107,10 @@ void __fastcall bestowWardsAttackOnHitHooked(game::CBatAttackBestowWards* thispt
                                              game::BattleAttackInfo** attackInfo)
 {
     using namespace game;
+    auto& fn = gameFunctions();
 
     auto targetUnit = static_cast<CMidUnit*>(
         objectMap->vftable->findScenarioObjectByIdForChange(objectMap, targetUnitId));
-
-    int qtyHealed = 0;
-    if (BattleMsgDataApi::get().unitCanBeHealed(objectMap, battleMsgData, targetUnitId)) {
-        const auto attack = thisptr->attackImpl;
-        const auto qtyHeal = attack->vftable->getQtyHeal(attack);
-        if (qtyHeal > 0)
-            qtyHealed = heal(objectMap, battleMsgData, targetUnit, qtyHeal);
-    }
 
     if (unitCanBeModified(battleMsgData, targetUnitId)) {
         const auto attack = thisptr->attackImpl;
@@ -128,6 +121,30 @@ void __fastcall bestowWardsAttackOnHitHooked(game::CBatAttackBestowWards* thispt
                     break;
             }
         }
+    }
+    //Prevents healing if the target has Heal resistance
+    bool healResistance = false;
+
+    const IUsSoldier* targetSoldier = fn.castUnitImplToSoldier(targetUnit->unitImpl);
+    const LAttackClass* attackClass = AttackClassCategories::get().heal;
+    const LImmuneCat* immuneCatC = targetSoldier->vftable->getImmuneByAttackClass(targetSoldier,
+                                                                                   attackClass);
+
+    if (immuneCatC->id == ImmuneCategories::get().once->id) {
+        healResistance = !BattleMsgDataApi::get().isUnitAttackClassWardRemoved(battleMsgData, targetUnitId, attackClass);
+        if (healResistance)
+            BattleMsgDataApi::get().removeUnitAttackClassWard(battleMsgData, targetUnitId, attackClass);
+        healResistance = true;
+    } else if (immuneCatC->id == ImmuneCategories::get().always->id) {
+        healResistance = true;
+    }
+    //
+    int qtyHealed = 0;
+    if (!healResistance && BattleMsgDataApi::get().unitCanBeHealed(objectMap, battleMsgData, targetUnitId)) {
+        const auto attack = thisptr->attackImpl;
+        const auto qtyHeal = attack->vftable->getQtyHeal(attack);
+        if (qtyHeal > 0)
+            qtyHealed = heal(objectMap, battleMsgData, targetUnit, qtyHeal);
     }
 
     BattleAttackUnitInfo info{};
@@ -159,6 +176,11 @@ bool __fastcall bestowWardsAttackIsImmuneHooked(game::CBatAttackBestowWards* thi
                                        false);
 
     if (attack == NULL)
+        return false;
+
+    //Only for "heal/ressurect" combination 
+    bool isDead = BattleMsgDataApi::get().getUnitStatus(battleMsgData, unitId, BattleStatus::Dead);
+    if (isDead && canPerformSecondaryAttack(thisptr, objectMap, battleMsgData, unitId))
         return false;
 
     const CMidUnit* targetUnit = fn.findUnitById(objectMap, unitId);

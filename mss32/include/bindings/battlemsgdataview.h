@@ -150,6 +150,8 @@ public:
     void removeAttackSourceWard(const IdView& unitId, int attackSourceId);
     void removeAttackClassWard(const IdView& unitId, int attackClassId);
 
+    void setRevivedStatus(const IdView& unitId, bool status);
+
 protected:
     template <typename T>
     static void bindAccessMethods(T& view)
@@ -220,6 +222,7 @@ protected:
         view["Cure"] = &BattleMsgDataView::cure;
         view["RemoveAttackSourceWard"] = &BattleMsgDataView::removeAttackSourceWard;
         view["RemoveAttackClassWard"] = &BattleMsgDataView::removeAttackClassWard;
+        view["SetRevivedStatus"] = &BattleMsgDataView::setRevivedStatus;
     }
 
 private:

@@ -2994,12 +2994,12 @@ void __fastcall battleEndHooked(game::IBatViewer* thisptr,
     auto objectMap = getObjectMap();
     auto constMap = const_cast<IMidgardObjectMap*>(objectMap);
 
-    CBatLogic test{};
-    test.battleMsgData = battle;
-    test.objectMap = constMap;
+    CBatLogic batLogic{};
+    batLogic.battleMsgData = battle;
+    batLogic.objectMap = constMap;
 
     CMidgardID winnerGroup;
-    CBatLogicApi::get().getBattleWinnerGroupId(&test, &winnerGroup);
+    CBatLogicApi::get().getBattleWinnerGroupId(&batLogic, &winnerGroup);
 
     std::optional<sol::environment> env;
     auto f = getScriptFunction(scriptsFolder() / "hooks/hooks.lua", "OnBattleEnd", env, false, true);

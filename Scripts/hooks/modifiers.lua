@@ -12,15 +12,10 @@ function OnAddModifier( unit, modifier )
 	return true
 end
 
+function ModifierApplyed( unit, modifier )
+end
+
 function OnRemoveModifier(unit, modifier)
 	return true
 end
 
-function OnBeforeBattleTurn(battle, unit)
-end
-
-function OnAfterBattleTurn(battle, unit, unitNext)
-end
-
-function OnBeforeBattleRound(battle)
-end

@@ -224,6 +224,7 @@ struct OriginalFunctions
 
     game::BattleMsgDataApi::Api::SetUnitStatus setUnitStatus;
     game::IBatViewerVftable::BattleEnd battleEnd;
+    game::BattleMsgDataApi::Api::UnitCanBeCured unitCanBeCured;
 };
 
 OriginalFunctions& getOriginalFunctions();

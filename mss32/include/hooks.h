@@ -340,6 +340,9 @@ void __fastcall battleEndHooked(game::IBatViewer* thisptr,
                                 const game::BattleMsgData* battleMsgData,
                                 const game::CMidgardID* a3);
 
+bool __stdcall unitCanBeCuredHooked(const game::BattleMsgData* battleMsgData,
+                                     const game::CMidgardID* unitId);
+
 } // namespace hooks
 
 #endif // HOOKS_H

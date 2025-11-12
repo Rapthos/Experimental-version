@@ -505,6 +505,12 @@ static Hooks getGameHooks()
             HookInfo{CBatAttackGiveAttackApi::vftable()->onHit, giveAttackOnHitHooked});
     }
 
+    //Advanced cure
+    if (userSettings().advancedCure != baseSettings().advancedCure) {
+        hooks.emplace_back(
+            HookInfo{battle.unitCanBeCured, unitCanBeCuredHooked, (void**)&orig.unitCanBeCured});
+    }
+
     if (userSettings().engine.sendRefreshInfoObjectCountLimit) {
         // Fix incomplete scenario loading when its object size exceed network message buffer size
         // of 512 KB
@@ -2976,6 +2982,22 @@ void __fastcall setUnitStatusHooked(const game::BattleMsgData* battleMsgData,
             }
         }
     }
+
+    if (userSettings().advancedCure != baseSettings().advancedCure && BattleStatus(status)
+            == BattleStatus::Cured
+        && enable)
+    {
+        BattleMsgDataApi::get().setUnitStatus(battleMsgData, unitId, BattleStatus::LowerDamageLvl1,
+                                              false);
+        BattleMsgDataApi::get().setUnitStatus(battleMsgData, unitId, BattleStatus::LowerDamageLvl2,
+                                              false);
+        BattleMsgDataApi::get().setUnitStatus(battleMsgData, unitId, BattleStatus::LowerDamageLong,
+                                              false);
+        BattleMsgDataApi::get().setUnitStatus(battleMsgData, unitId, BattleStatus::LowerInitiative,
+                                              false);
+        BattleMsgDataApi::get().setUnitStatus(battleMsgData, unitId, BattleStatus::LowerInitiativeLong,
+                                              false);
+    }
 }
 
 //For future updates
@@ -3019,6 +3041,23 @@ void __fastcall battleEndHooked(game::IBatViewer* thisptr,
    
  
     //getOriginalFunctions().battleEnd(thisptr, battle, a3);
+}
+
+
+bool __stdcall unitCanBeCuredHooked(const game::BattleMsgData* battleMsgData,
+                                     const game::CMidgardID* unitId)
+{
+    using namespace game;
+    auto& orig = getOriginalFunctions();
+    auto& battle = BattleMsgDataApi::get();
+
+    if (battle.getUnitStatus(battleMsgData, unitId, BattleStatus::LowerDamageLvl1)
+        || battle.getUnitStatus(battleMsgData, unitId, BattleStatus::LowerDamageLvl2)
+        || battle.getUnitStatus(battleMsgData, unitId, BattleStatus::LowerInitiative))
+        return true;
+
+
+    return orig.unitCanBeCured(battleMsgData, unitId);
 }
 
 } // namespace hooks

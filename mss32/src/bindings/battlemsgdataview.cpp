@@ -720,7 +720,7 @@ void BattleMsgDataView::setRevivedStatus(const IdView& unitId, bool status)
     if (!info) {
         return;
     }
-
+    
     info->unitFlags.parts.revived = status;
 
 }

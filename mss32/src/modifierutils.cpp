@@ -515,7 +515,7 @@ void removeModifier(game::BattleMsgData* battleMsgData,
         // Unit HP adjustment
         int maxHp = getUnitHpMax(unit);
         if (unit->currentHp > maxHp)
-            BattleMsgDataApi::get().setUnitHp(battleMsgData, &unit->id, unit->currentHp);
+            BattleMsgDataApi::get().setUnitHp(battleMsgData, &unit->id, maxHp);
     }
 }
 

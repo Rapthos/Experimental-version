@@ -228,6 +228,7 @@ struct Settings
     bool alchemistKeepsAttackCount;
     bool instantBuffRemoval;
     bool reviveUsesQtyHeal;
+    bool advancedCure;
 };
 
 const Settings& baseSettings();

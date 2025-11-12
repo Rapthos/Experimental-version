@@ -401,6 +401,7 @@ static void readSettings(const sol::table& table, Settings& settings)
     settings.alchemistKeepsAttackCount = readSetting(table, "alchemistKeepsAttackCount", defaultSettings().alchemistKeepsAttackCount);
     settings.instantBuffRemoval = readSetting(table, "instantBuffRemoval", defaultSettings().instantBuffRemoval);
     settings.reviveUsesQtyHeal = readSetting(table, "reviveUsesQtyHeal", defaultSettings().reviveUsesQtyHeal);
+    settings.advancedCure = readSetting(table, "advancedCure", defaultSettings().advancedCure);
     // People keep forgetting to turn this off in release packages
     //settings.debugMode = readSetting(table, "debugHooks", defaultSettings().debugMode);
     // clang-format on
